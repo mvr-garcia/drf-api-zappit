@@ -7,6 +7,7 @@ class PostSerializer(serializers.ModelSerializer):
     poster = serializers.ReadOnlyField(source='poster.username')
     # Then the id will be shown on 'poster_id'
     poster_id = serializers.ReadOnlyField(source='poster.id')
+    votes = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -16,8 +17,16 @@ class PostSerializer(serializers.ModelSerializer):
             'url',
             'poster',
             'poster_id',
-            'created'
+            'created',
+            'votes',
         ]
+
+    def get_votes(self, post):
+        """
+        :param post: The post (attribute of Vote model) who will count the votes
+        :return: Quantity of votes
+        """
+        return Vote.objects.filter(post=post).count()
 
 
 class VoteSerializer(serializers.ModelSerializer):

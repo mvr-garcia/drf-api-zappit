@@ -1,5 +1,6 @@
-from rest_framework import generics, permissions
-from rest_framework.exceptions import ValidationError
+from rest_framework import generics, permissions, mixins
+from rest_framework.exceptions import ValidationError, status
+from rest_framework.response import Response
 from posts.models import Post, Vote
 from .serializers import PostSerializer, VoteSerializer
 
@@ -15,7 +16,7 @@ class PostList(generics.ListCreateAPIView):
         serializer.save(poster=self.request.user)
 
 
-class VoteCreate(generics.CreateAPIView):
+class VoteCreate(generics.CreateAPIView, mixins.DestroyModelMixin):
     serializer_class = VoteSerializer
     # Allows only user authenticated to access the API
     permission_classes = [permissions.IsAuthenticated]
@@ -35,7 +36,12 @@ class VoteCreate(generics.CreateAPIView):
         if self.get_queryset().exists():
             # If True raise the exception and exit
             raise ValidationError('You have already voted for this post :)')
-
         serializer.save(voter=self.request.user, post=Post.objects.get(id=self.kwargs['id']))
 
-# Aula 8 - API Auth
+    # Delete the vote if the user had already voted
+    def delete(self, request, *args, **kwargs):
+        if self.get_queryset().exists():
+            self.get_queryset().delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            raise ValidationError('You never voted for this post..silly!')
