@@ -16,9 +16,24 @@ class PostList(generics.ListCreateAPIView):
         serializer.save(poster=self.request.user)
 
 
+class PostRetrieveDestroy(generics.RetrieveDestroyAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    # Allows only user authenticated to post through the API
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    # Delete the post if the user is the owner
+    def delete(self, request, *args, **kwargs):
+        post = Post.objects.filter(pk=kwargs['pk'], poster=self.request.user)
+        if post.exists():
+            return self.destroy(request, *args, **kwargs)
+        else:
+            raise ValidationError('This isn\'t your post to delete, Bro!')
+
+
 class VoteCreate(generics.CreateAPIView, mixins.DestroyModelMixin):
     serializer_class = VoteSerializer
-    # Allows only user authenticated to access the API
+    # Allows only user authenticated to access the Vote API
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -27,7 +42,7 @@ class VoteCreate(generics.CreateAPIView, mixins.DestroyModelMixin):
         and the post, to prepare to vote.
         """
         user = self.request.user
-        post = Post.objects.get(id=self.kwargs['id'])
+        post = Post.objects.get(pk=self.kwargs['pk'])
         return Vote.objects.filter(voter=user, post=post)
 
     # Runs immediately before create
@@ -36,7 +51,7 @@ class VoteCreate(generics.CreateAPIView, mixins.DestroyModelMixin):
         if self.get_queryset().exists():
             # If True raise the exception and exit
             raise ValidationError('You have already voted for this post :)')
-        serializer.save(voter=self.request.user, post=Post.objects.get(id=self.kwargs['id']))
+        serializer.save(voter=self.request.user, post=Post.objects.get(pk=self.kwargs['pk']))
 
     # Delete the vote if the user had already voted
     def delete(self, request, *args, **kwargs):

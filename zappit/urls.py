@@ -19,8 +19,12 @@ from posts.api import viewset
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # List All posts
     path('api/posts', viewset.PostList.as_view()),
-    path('api/posts/<int:id>/vote', viewset.VoteCreate.as_view()),
+    # List a specific post
+    path('api/posts/<int:pk>', viewset.PostRetrieveDestroy.as_view()),
+    # Vote API Page
+    path('api/posts/<int:pk>/vote', viewset.VoteCreate.as_view()),
     # Use default login os the Rest Framework
     path('api-auth/', include('rest_framework.urls')),
 ]
